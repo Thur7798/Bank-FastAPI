@@ -19,22 +19,20 @@ class TransactionService:
             raise AccountNotFoundError
         
         if transaction.type == TransactionType.WITHDRAWAL:
-            
             balance = float(account.balance) - transaction.amount
-            
             if balance < 0:
                 raise BusinessError("Operation not carried out due to lack of balance")
         else:
             balance = float(account.balance) + transaction.amount
             
         transaction_id = await self.__register_transaction(transaction)
-        
         await self.__update_account_balance(transaction.account_id, balance)
         
-        query = transactions.select().where(transactions.c.id==transaction.id)
+        # usar transaction_id aqui, não transaction.id
+        query = transactions.select().where(transactions.c.id == transaction_id)
         
         return await database.fetch_one(query)
-    
+
     async def __update_account_balance(self, account_id: int, balance: float) -> None:
         command = accounts.update().where(accounts.c.id == account_id).values(balance=balance)
         await database.execute(command)

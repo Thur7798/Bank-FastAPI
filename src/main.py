@@ -5,11 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.controllers import account, auth, transaction
-from src.database import database
+from src.database import database, metadata, engine
 from src.exceptions import AccountNotFoundError, BusinessError
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    metadata.create_all(engine)
     await database.connect()
     yield
     await database.disconnect()
