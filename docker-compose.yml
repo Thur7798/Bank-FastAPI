@@ -1,40 +1,30 @@
-version: "3.3"
+name: Publicar Imagem Docker
 
-services:
-  api:
-    build: .
-    container_name: bank_api
-    ports:
-      - "8080:8000"
-    environment:
-      - DB_HOST=db
-      - DB_USER=usuario
-      - DB_PASS=senha
-      - DB_NAME=bankdb
-      - CACHE_HOST=cache
-    volumes:
-      - ./logs:/app/logs
-    depends_on:
-      - db
-      - cache
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
 
-  db:
-    image: postgres:15
-    container_name: bank_db
-    environment:
-      - POSTGRES_USER=usuario
-      - POSTGRES_PASSWORD=senha
-      - POSTGRES_DB=bankdb
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+jobs:
+  build-and-push:
+    name: Build e Push para GHCR
+    runs-on: ubuntu-latest
 
-  cache:
-    image: redis:7
-    container_name: bank_cache
-    ports:
-      - "6379:6379"
+    permissions:
+      contents: read
+      packages: write
 
-volumes:
-  db_data:
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Login no GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build da imagem
+        run: docker build -t ghcr.io/${{ github.repository }}:latest .
+
+      - name: Push da imagem
+        run: docker push ghcr.io/${{ github.repository }}:latest
